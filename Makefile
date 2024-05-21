@@ -1,5 +1,5 @@
-EXEFILE = rev
-OBJECTS = rev.o mystrrev.o
+EXEFILE = main
+OBJECTS = main.o convolution.o
 CCFMT = -m64
 NASMFMT = -f elf64
 CCOPT = 

@@ -1,7 +1,7 @@
  ; x86-64 version
         section .text
-        global  mystrrev
-mystrrev:
+        global  convolution
+convolution:
         mov     rcx, rdi        ; head ptr
         mov     rdx, rcx        ; tail ptr
 

@@ -9,7 +9,7 @@ void init();
 
 int main(int argc, char *argv[]) {
     for (int i = 1; i < argc; i++)
-        printf("%d: %s\n", i, mystrrev(argv[i]));
+        printf("%d: %s\n", i, convolution(argv[i]));
 
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
