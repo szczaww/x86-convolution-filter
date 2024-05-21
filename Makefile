@@ -1,18 +1,22 @@
-EXEFILE = main
-OBJECTS = main.o convolution.o
+EXEFILE = rev
+OBJECTS = rev.o mystrrev.o
 CCFMT = -m64
 NASMFMT = -f elf64
 CCOPT = 
 NASMOPT = -w+all
 
-.c.o:
-	cc $(CCFMT) $(CCOPT) -c $<
+CC = g++
+CFLAGS = -c -g -Wall -Wextra
+LDFLAGS = -lglut -lGL -lGLU
 
-.s.o:
-	nasm $(NASMFMT) $(NASMOPT) -l $*.lst $<
+%.o: %.cpp
+	$(CC) $(CCFMT) $(CFLAGS) -o $@ $<
+
+%.o: %.s
+	nasm $(NASMFMT) $(NASMOPT) -o $@ $<
 
 $(EXEFILE): $(OBJECTS)
-	cc $(CCFMT) -o $@ $^
+	$(CC) $(CCFMT) -o $@ $^ $(LDFLAGS)
 	
 clean:
-	rm *.o *.lst $(EXEFILE)
+	rm -f *.o *.lst $(EXEFILE)
