@@ -7,7 +7,7 @@ NASMOPT = -w+all
 
 CC = g++
 CFLAGS = -c -g -Wall -Wextra
-LDFLAGS = -lglut -lGL -lGLU
+LDFLAGS = -lGL -lglfw
 
 %.o: %.cpp
 	$(CC) $(CCFMT) $(CFLAGS) -o $@ $<
