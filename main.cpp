@@ -1,85 +1,32 @@
-// #include <stdio.h>
-// #include <GL/glut.h>
+#include <stdio.h>
+#include <SDL2/SDL.h>
+#include <iostream>
 
-// extern "C" char *convolution(char *s);
+extern "C" char *convolution(char *s);
 
-
-// void display();
-// void init();
-
-// int main(int argc, char *argv[]) {
-//     for (int i = 1; i < argc; i++)
-//         printf("%d: %s\n", i, convolution(argv[i]));
-
-//     glutInit(&argc, argv);
-//     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-//     glutInitWindowSize(800, 600);
-//     glutCreateWindow("OpenGL Example");
-
-//     init();
-
-//     glutDisplayFunc(display);
-//     glutMainLoop();
-
-//     return 0;
-// }
-
-// void init() {
-//     glClearColor(0.0, 0.0, 0.0, 1.0);
-//     glEnable(GL_DEPTH_TEST);
-// }
-
-// void display() {
-//     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-//     glBegin(GL_TRIANGLES);
-//         glColor3f(1.0, 0.0, 0.0); // Red
-//         glVertex3f(-0.5, -0.5, 0.0);
-//         glColor3f(0.0, 1.0, 0.0); // Green
-//         glVertex3f(0.5, -0.5, 0.0);
-//         glColor3f(0.0, 0.0, 1.0); // Blue
-//         glVertex3f(0.0, 0.5, 0.0);
-//     glEnd();
-
-//     glutSwapBuffers();
-// }
-
-// -----------------------------------------------------------------------
-
-#include <GLFW/glfw3.h>
-
-int main(void)
-{
-    GLFWwindow* window;
-
-    /* Initialize the library */
-    if (!glfwInit())
-        return -1;
-
-    /* Create a windowed mode window and its OpenGL context */
-    window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
-    if (!window)
-    {
-        glfwTerminate();
+int main(int argc, char *argv[]) {
+    for (int i = 1; i < argc; i++)
+        printf("%d: %s\n", i, convolution(argv[i]));
+    
+    // Initialize SDL
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+        std::cout << "SDL could not initialize! SDL_Error: " << SDL_GetError() << std::endl;
         return -1;
     }
 
-    /* Make the window's context current */
-    glfwMakeContextCurrent(window);
-
-    /* Loop until the user closes the window */
-    while (!glfwWindowShouldClose(window))
-    {
-        /* Render here */
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        /* Swap front and back buffers */
-        glfwSwapBuffers(window);
-
-        /* Poll for and process events */
-        glfwPollEvents();
+    // Create window
+    SDL_Window* window = SDL_CreateWindow("SDL Test", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, SDL_WINDOW_SHOWN);
+    if (!window) {
+        std::cout << "Window could not be created! SDL_Error: " << SDL_GetError() << std::endl;
+        SDL_Quit();
+        return -1;
     }
 
-    glfwTerminate();
-    return 0;
-}
+    // Create renderer
+    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    if (!renderer) {
+        std::cout << "Renderer could not be created! SDL_Error: " << SDL_GetError() << std::endl;
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return -1;
+    }
