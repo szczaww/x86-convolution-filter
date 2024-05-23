@@ -2,13 +2,25 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <iostream>
+#include <fstream>
 #include <string>
 
 
-extern "C" void convolution(Uint32* image_pixel_map); //, Uint32* result_pixel_map, int width, int height, int mouse_x, int mouse_y);
+extern "C" void convolution(Uint32* image_pixel_map, Uint32* result_pixel_map, int width, int height, int mouse_x, int mouse_y);
 
+bool saveSurfacePixelsToFile(SDL_Surface* surface, const char* filename) {
+    if (!surface) {
+        std::cerr << "Surface is null." << std::endl;
+        return false;
+    }
+    std::ofstream outFile(filename, std::ios::binary);
+    outFile.write(static_cast<const char*>(surface->pixels), surface->pitch * surface->h);
+    outFile.close();
+    return true;
+}
 
 void redrawWindow(SDL_Texture* texture, SDL_Renderer* renderer, int pitch, Uint32* pixels) {
+    pitch++;
     // Update the texture with the pixel buffer
     SDL_UpdateTexture(texture, nullptr, pixels, pitch);
 
@@ -24,8 +36,8 @@ int main(int argc, char *argv[]) {
     //     printf("%d: %s\n", i, convolution(argv[i]));
     
     const char* path = "IFiles/julia1.bmp";
-    int width = 512;
-    int height = 512;
+    int width = 1200;
+    int height = 1200;
 
     if (argc == 2) {
         path = argv[2];
@@ -73,17 +85,13 @@ int main(int argc, char *argv[]) {
     Uint32* image_pixel_map = (Uint32*)surface->pixels;
     Uint32* result_pixel_map = new Uint32[width * height];
 
-    // ============================================================================= //
+    // Save for debugging
+    saveSurfacePixelsToFile(surface, "pixels.dat");
+    int pitch = surface->pitch;
+    int sf_width = surface->w;
+    printf("%s: %d\n", "Pitch:", pitch);
+    printf("%s: %d\n", "Width:", sf_width);
 
-    SDL_Surface* test_surface1 = IMG_Load("IFiles/julia3.bmp");
-    Uint32* test_map1 = (Uint32*)test_surface1->pixels;
-    int test_map_pitch1 = test_surface1->pitch;
-
-    SDL_Surface* test_surface2 = IMG_Load("IFiles/julia2.bmp");
-    Uint32* test_map2 = (Uint32*)test_surface2->pixels;
-    int test_map_pitch2 = test_surface2->pitch;
-    
-    // ============================================================================= //
 
     // Make texture from surface
     SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
@@ -96,7 +104,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Free surface
-    SDL_FreeSurface(surface);
+    // SDL_FreeSurface(surface);
     // Clear renderer
     SDL_RenderClear(renderer);
     // Render texture
@@ -131,19 +139,18 @@ int main(int argc, char *argv[]) {
             }
             else if (event.type == SDL_MOUSEBUTTONDOWN) {
                 SDL_GetMouseState(&mouse_x, &mouse_y);
-                //convolution(result_pixel_map); // width, height, mouse_x, mouse_y);
+                convolution(image_pixel_map, result_pixel_map, width, height, mouse_x, mouse_y);
                 i++;
                 if (i%2 ==0) {
-                    redrawWindow(texture, renderer, test_map_pitch1, test_map1);
+                    redrawWindow(texture, renderer, pitch, image_pixel_map);
                 } else {
-                    redrawWindow(texture, renderer, test_map_pitch2, test_map2);
+                    redrawWindow(texture, renderer, pitch, result_pixel_map);
                 }
             }
         }
     }
 
-    //std::cout << "Mouse x:" << mouse_x;
-    //std::cout << "Mouse y:" << mouse_y;
+    
     printf("%s: %d\n", "Mouse x:", mouse_x);
     printf("%s: %d\n", "Mouse y:", mouse_y);
 
