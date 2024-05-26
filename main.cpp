@@ -149,15 +149,15 @@ int main(int argc, char *argv[]) {
             }
         }
     }
-    
+
 
     
     printf("%s: %d\n", "Mouse x:", mouse_x);
     printf("%s: %d\n", "Mouse y:", mouse_y);
 
     // Clean up
-    delete[] image_pixel_map;
-    delete[] result_pixel_map;
+    // delete[] image_pixel_map;
+    // delete[] result_pixel_map;
     SDL_DestroyTexture(texture);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);

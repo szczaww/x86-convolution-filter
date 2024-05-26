@@ -1,9 +1,4 @@
-        section .data
-        fixed_point_1 dq 4294967296
-        fixed_point_5 dq 21474836480
-        
-        
-        section .text
+`       section .text
         global  convolution
         
 convolution:
@@ -18,10 +13,17 @@ convolution:
         ; r11 - current y
 
         ; r12 - radius
-        ; r13 - 
-        ; r14 - 
-        ; r15 -
-        ; rbx -
+        ; r13 - new pixel color
+        ; r14 - offset for color byte
+        ; r15 - single pixel color factor
+        ; rbx - calculations
+
+        push    rbp
+        mov     rbp, rsp
+        push    r12
+        push    r13
+        push    r14
+        push    r15
 
         ; Initial values
         mov      r10, 1
@@ -44,7 +46,8 @@ convolute_pixel:
 estimate_sqr_root:
         mov     r13, 0                  ; r13 - low
         mov     r14, r12                ; r14 - high
-        mov     rbx, [fixed_point_1]    ; 1 in 32b32b
+        mov     rbx, 1                  ; 1
+        shl     rbx, 32                 ; 1 in 32b32b
 
 sqrt_root_loop:
         mov     r15, r13        ; r15 = low
@@ -62,12 +65,12 @@ sqrt_root_loop:
 lower_half:
         mov     r13, r15                ; low = mid
 
-        add     r13, rbx                ; low = mid + 1 (2^32)          ; !!!!!
+        add     r13, rbx                ; low = mid + 1 (2^32)
         jmp     continue
 
 upper_half:
         mov     r14, r15                ; high = mid
-        sub     r14, rbx                ; high = mid - 1 (2^32)         ; !!!!!
+        sub     r14, rbx                ; high = mid - 1 (2^32)
 
 continue:
         cmp     r13, r14
@@ -95,6 +98,7 @@ perform_division:
         shl     r13, 32         ; convert to fixed pointed 32b32b
         xor     rdx, rdx        ; load with 0's for division
 
+
         mov     rax, r12        ; rax = r
         div     r13             ; rax = r /  min(wdith, height)
         shr     rax, 1          ; rax = r / (min(wdith, height) * 2)
@@ -103,7 +107,7 @@ perform_division:
         mov     r12, rax
 
 take_second_minimum:
-        cmp     r12, rbx                ; 1 in 32b32b (2^32)            ; !!!!!
+        cmp     r12, rbx                ; 1 in 32b32b (2^32)
         jl      calculate_offset        ; 1 is higher
 
         mov     r12, rbx                ; 1 is lower 
@@ -118,20 +122,22 @@ calculate_offset:
         mov     r14, r11        ;  y
         imul    r14, rdx        ;  y * width
         add     r14, r10        ;  y * width + x 
-        imul    r14, 3          ; (y * width + x) * 3 = offset from bitmap start
+        imul    r14, 3          ; (y * width + x) * 3 = offset from bitmap start        ; BRUH
         
         add     r14, rdi        ;  original pixel byte adress
 
 calculate_middle_mask:
-        imul    r13, r12, -1            ; mask = W * (-1)               ; !!!!!
+        imul    r13, r12, -1            ; mask = W * (-1)
         shl     r13, 2                  ; mask = W * (-4)
         shr     r13, 32                 ; fix fixed point offset
 
-        mov     rax, [fixed_point_5]
-        add     r13, rax                ; += 5 (in 32b32b)              ; !!!!!
+        mov     rax, 5
+        shl     rax, 32
+        add     r13, rax                ; += 5 (in 32b32b)
         
 calculate_middle_color:
         imul    r13, [r14]      ; color = mask * og M color
+        jmp     end
         shr     r13, 32         ; fix fixed point offset
 
 sum_edge_colors:
@@ -142,20 +148,22 @@ sum_edge_colors:
         ; r10 - offset difference when moving diagonaly
         ; r11 - sum of colors
 
+        push    rbp
+        mov     rbp, rsp
         push    r10
         push    r11
 
         mov     r10, rdx        ; width
-        imul    r10, 3          ; width * 3
+        imul    r10, 3          ; width * 3     ; BRUH
 
 
-        sub     r14, 3          ; L offset
+        sub     r14, 3          ; L offset      ; BRUH
         mov     r11, [r14]      ; L color
 
-        add     r14, 6          ; R offset
+        add     r14, 6          ; R offset      ; BRUH
         add     r11, [r14]      ; L + R color
         
-        sub     r14, 3          ; back to M
+        sub     r14, 6          ; back to M     ; BRUH
         sub     r14, r10        ; T offset
         add     r11, [r14]      ; L + R + T color
 
@@ -169,8 +177,8 @@ calculate_edge_mask:
         mov     r15, r12                ; mask = w
         shl     r15, 1                  ; mask = w * 2
 
-        mov     rax, [fixed_point_1]
-        sub     r15, rax                ; mask = w * 2 - 1 (in 32b32b)          ; !!!!!
+        ;mov     rax, [fixed_point_1]
+        sub     r15, rbx                ; mask = w * 2 - 1 (in 32b32b)          ; !!!!!
 
         imul    r11, r15        ; color factor = color * mask
         shr     r11, 32         ; fix fixed point offset
@@ -183,17 +191,17 @@ sum_corner_colors:
 
         ; offset atm points to B pixel
 
-        sub     r14, 3          ; BL offset
+        sub     r14, 3          ; BL offset     ; BRUH
         mov     r11, [r14]      ; BL color
 
-        add     r14, 6          ; BR offset
+        add     r14, 6          ; BR offset     ; BRUH
         add     r11, [r14]      ; BL + BR color
 
         sub     r14, r10        ; R edge
         sub     r14, r10        ; TR offset
         add     r11, [r14]      ; BL + BR + TR color
 
-        sub     r14, 6          ; TL offset
+        sub     r14, 3          ; TL offset     ; BRUH
         add     r11, [r14]      ; BL + BR + TR + TL color
 
         shl     r11, 32         ; convert to 32b32b
@@ -208,13 +216,15 @@ calculate_corner_mask:
 
         pop     r11
         pop     r10
+        mov     rsp, rbp
+        pop     rbp
 
 save_color:
         ; r14 currently is offset to TL pixel
 
         shr     r13, 32         ; turn back from fixed point to int
 
-        add     r14, 3          ; back to T pixel
+        add     r14, 3          ; back to T pixel       ; BRUH
         add     r14, r10        ; back to M pixel
 
         sub     r14, rdi        ; back to pure offset
@@ -237,7 +247,7 @@ next_pixel:
         jmp     convolute_pixel
 
 next_row:
-        mov      r10, 1
+        mov     r10, 1
         add     r11, 1
 
         cmp     r11, rcx
@@ -245,5 +255,11 @@ next_row:
 
 
 end:
-        mov     rax, rdi        ; return result_pixel_map
+        mov     rax, rsi        ; return result_pixel_map
+        pop     r15
+        pop     r14
+        pop     r13
+        pop     r12
+        mov     rsp, rbp
+        pop     rbp
         ret
