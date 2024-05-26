@@ -149,6 +149,7 @@ int main(int argc, char *argv[]) {
             }
         }
     }
+    
 
     
     printf("%s: %d\n", "Mouse x:", mouse_x);
