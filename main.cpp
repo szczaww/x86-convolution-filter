@@ -19,19 +19,21 @@ int main() {
     // Prepare variables
     int mouse_x = 0;
     int mouse_y = 0;
-    const char* path = "IFiles/flower.bmp";
+    const char* path = "IFiles/wilk.bmp";
 
    // Initialize SDL
     SDL_Init(SDL_INIT_VIDEO);   
 
     // Load image and extract info
-    SDL_Surface* surface = IMG_Load(path);
+    SDL_Surface* og_surface = IMG_Load(path);
+    SDL_Surface* surface = SDL_ConvertSurfaceFormat(og_surface, SDL_PIXELFORMAT_ARGB8888, 0);
     int width = surface->w; 
     int height = surface->h;
     int pitch = surface->pitch;
     int bpp = surface->format->BytesPerPixel;
     Uint32* image_pixel_map = (Uint32*)surface->pixels;
     Uint32* result_pixel_map = new Uint32[width * height];
+
 
     // Print for debugging
     printf("%s %u\n", "Width:", width);
@@ -43,11 +45,14 @@ int main() {
 
     SDL_Window* window = SDL_CreateWindow("Mandelbrot Set", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_SHOWN);   // Create a window
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);                                                          // Create a renderer
-    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);                                                                     // Make texture from surface
+    SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, width, height);                   // Create texture
 
-    SDL_RenderClear(renderer);                      // Clear renderer
-    SDL_RenderCopy(renderer, texture, NULL, NULL);  // Render texture
-    SDL_RenderPresent(renderer);                    // Present renderer
+    SDL_RenderClear(renderer);                                      // Clear renderer
+    SDL_UpdateTexture(texture, nullptr, image_pixel_map, pitch);    // Update texture with the correct pitch
+    SDL_RenderCopy(renderer, texture, NULL, NULL);                  // Render texture
+    SDL_RenderPresent(renderer);                                    // Present renderer
+
+    redrawWindow(texture, renderer, pitch, image_pixel_map);
 
 
     bool quit = false;
@@ -66,7 +71,6 @@ int main() {
 
                 convolution(image_pixel_map, result_pixel_map, width, height, mouse_x, mouse_y, bpp);
                 redrawWindow(texture, renderer, pitch, result_pixel_map);
-                
             }
         }
     }
@@ -74,6 +78,8 @@ int main() {
     // Clean up
     // delete[] image_pixel_map;
     // delete[] result_pixel_map;
+    SDL_FreeSurface(surface);
+    SDL_FreeSurface(og_surface);
     SDL_DestroyTexture(texture);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
