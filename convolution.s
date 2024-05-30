@@ -224,10 +224,6 @@ save_color:
 
         mov     [r13], r14b     ; save color byte 1
         inc     r13
-        ;mov     [r13], r14b     ; save color byte 2
-        ;inc     r13
-        ;mov     [r13], r14b     ; save color byte 3
-        ;inc     r13
 
         inc     rbx
         cmp     rbx, 3
