@@ -199,6 +199,21 @@ corner3:
         ; Convert float to integer
         cvtsd2si        r14, xmm1 
 
+        ;cmp             r14, 255
+        ;jg              greater_than_255
+
+        ;cmp             r14, 0
+        ;jl              less_than_0
+
+        ;jmp             save_color
+
+less_than_0:
+        ;mov             r14, 0
+        ;jmp             save_color
+
+greater_than_255:
+        ;mov             r14, 255
+
 save_color:
         ; Fix offset back
         add     r13, r12        ; go to T
