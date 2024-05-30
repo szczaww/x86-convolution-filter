@@ -165,18 +165,15 @@ corners_factor:
 
         ; Sum edge colors
         sub     r13, r12                ; go to BL
-corner1:
         mov     r14b, byte [r13]        ; BL color
 
         add     r13, r12                ; go to BM
         add     r13, r12                ; go to BR
-corner2:
         movzx   rax, byte [r13]         ; load
         add     r14, rax                ; BL + BR color
 
         sub     r13, r15                ; go to R
         sub     r13, r15                ; go to TR
-corner3:
         movzx   rax, byte [r13]         ; load
         add     r14, rax                ; BL + BR + TR color
 
@@ -207,11 +204,11 @@ corner3:
 
         ;jmp             save_color
 
-less_than_0:
+;less_than_0:
         ;mov             r14, 0
         ;jmp             save_color
 
-greater_than_255:
+;greater_than_255:
         ;mov             r14, 255
 
 save_color:
