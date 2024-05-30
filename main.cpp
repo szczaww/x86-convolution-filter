@@ -4,7 +4,6 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <unistd.h>
 
 extern "C" void convolution(Uint32* image_pixel_map, Uint32* result_pixel_map, int width, int height, int mouse_x, int mouse_y, int bytes_per_pixel);
 
@@ -19,8 +18,8 @@ int main(int argc, char *argv[]) {
     // Prepare variables
     int mouse_x = 0;
     int mouse_y = 0;
-    int new_x;
-    int new_y;
+    int new_x = 0;
+    int new_y = 0;
     const char* path = "IFiles/view.bmp";
 
     if (argc >= 1) {
@@ -122,8 +121,8 @@ int main(int argc, char *argv[]) {
     }
 
     // Clean up
-    // delete[] image_pixel_map;
-    // delete[] result_pixel_map;
+    delete[] image_pixel_map;
+    delete[] result_pixel_map;
     SDL_FreeSurface(surface);
     SDL_FreeSurface(og_surface);
     SDL_DestroyTexture(texture);
