@@ -85,9 +85,11 @@ calculate_padding:
         mov     r14, r15          ; copy        
         and     r14, 7          ; last 3 bits 
 
+break1:
         cmp     r14, 0
         je      calculate_offset  ; padding is zero
 
+break2:
         ; Padding neccessary
         mov     r13, 4
         sub     r13, r14                ; padding = 4 - r14
@@ -165,15 +167,18 @@ corners_factor:
 
         ; Sum edge colors
         sub     r13, r12                ; go to BL
+corner1:
         mov     r14b, byte [r13]        ; BL color
 
         add     r13, r12                ; go to BM
         add     r13, r12                ; go to BR
+corner2:
         movzx   rax, byte [r13]         ; load
         add     r14, rax                ; BL + BR color
 
         sub     r13, r15                ; go to R
         sub     r13, r15                ; go to TR
+corner3:
         movzx   rax, byte [r13]         ; load
         add     r14, rax                ; BL + BR + TR color
 
@@ -211,18 +216,23 @@ save_color:
         inc     r13
 
 next_pixel:
-        cmp     r10, rdx
-        je      next_row         ; leaves row without modyfing last pixel
-
-        add     r10, 1
+        mov     r13, rdx
+        sub     r13, 2
+        cmp     r10, r13         ; when width = 10, leave at x = 8 (9th column)
+        je      next_row
+     
+        inc     r10
         jmp     convolute_pixel
 
 next_row:
         mov     r10, 1
         add     r11, 1
 
-        cmp     r11, rcx
-        jl      convolute_pixel ; ends when equals last pixel
+        mov     r13, rcx
+        sub     r13, 1
+        cmp     r11, r13         ; when height = 10, leave at y = 8 (9th row)
+
+        jl     convolute_pixel
 
 end:
         mov     rax, rsi        ; return result_pixel_map

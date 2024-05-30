@@ -19,7 +19,7 @@ int main() {
     // Prepare variables
     int mouse_x = 0;
     int mouse_y = 0;
-    const char* path = "IFiles/julia1.bmp";
+    const char* path = "IFiles/flower.bmp";
 
    // Initialize SDL
     SDL_Init(SDL_INIT_VIDEO);   
