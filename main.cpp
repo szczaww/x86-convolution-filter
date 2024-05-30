@@ -121,8 +121,6 @@ int main(int argc, char *argv[]) {
     }
 
     // Clean up
-    delete[] image_pixel_map;
-    delete[] result_pixel_map;
     SDL_FreeSurface(surface);
     SDL_FreeSurface(og_surface);
     SDL_DestroyTexture(texture);
