@@ -15,11 +15,15 @@ void redrawWindow(SDL_Texture* texture, SDL_Renderer* renderer, int pitch, Uint3
     SDL_RenderPresent(renderer);                            // Display
 }
 
-int main() {
+int main(int argc, char *argv[]) {
     // Prepare variables
     int mouse_x = 0;
     int mouse_y = 0;
     const char* path = "IFiles/view.bmp";
+
+    if (argc >= 1) {
+        path = argv[1];
+    }
 
    // Initialize SDL
     SDL_Init(SDL_INIT_VIDEO);   
