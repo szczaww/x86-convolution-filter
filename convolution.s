@@ -208,7 +208,7 @@ save_color:
         sub     r13, rdi        ; back to pure offset
         add     r13, rsi        ; new pixel map save adress
 
-        mov     [r13], r14b      ; save color byte 1
+        mov     [r13], r14b     ; save color byte 1
         inc     r13
         mov     [r13], r14b     ; save color byte 2
         inc     r13
@@ -216,23 +216,24 @@ save_color:
         inc     r13
 
 next_pixel:
-        mov     r13, rdx
-        sub     r13, 2
-        cmp     r10, r13         ; when width = 10, leave at x = 8 (9th column)
-        je      next_row
-     
-        inc     r10
-        jmp     convolute_pixel
+        inc     r10             ; x++
+
+        mov     r13, rdx        ; width
+        dec     r13             ; width - 1
+
+        cmp     r10, r13
+        je      next_row        ; x = width -1 
+        jmp     convolute_pixel ; x < width -1 
 
 next_row:
-        mov     r10, 1
-        add     r11, 1
+        mov     r10, 1          ; x = 1 (2nd pixel)
+        inc     r11             ; y++
 
-        mov     r13, rcx
-        sub     r13, 1
-        cmp     r11, r13         ; when height = 10, leave at y = 8 (9th row)
-
-        jl     convolute_pixel
+        mov     r13, rcx        ; height
+        sub     r13, 1          ; height - 1
+     
+        cmp     r11, r13
+        jl      convolute_pixel ; y < width -1
 
 end:
         mov     rax, rsi        ; return result_pixel_map
