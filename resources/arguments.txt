@@ -1,9 +1,0 @@
-; Incoming arguments
-; rdi - image pixel map address
-; rsi - result pixel map address
-; rdx - width
-; rcx - height
-; r8  - mouse x
-; r9  - mouse y
-; r10 - current x
-; r11 - current y
