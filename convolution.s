@@ -37,6 +37,23 @@ convolution:
         mov      r10, 1
         mov      r11, 1
 
+calculate_padding:
+        ; Lets add padding
+        ; r15 - width * bpp
+        mov     r15, rdx        ; width
+        imul    r15, r12        ; width * bpp
+
+        mov     r14, r15        ; copy        
+        and     r14, 7          ; last 3 bits 
+
+        cmp     r14, 0
+        je      convolute_pixel ; padding is zero
+
+        ; Padding neccessary
+        mov     r13, 4
+        sub     r13, r14        ; padding = 4 - r14
+        add     r15, r13        ; width * bpp + padding
+
 convolute_pixel:
         ; Calculate distance
         mov     r13, r10
@@ -68,35 +85,16 @@ width_lower:
         cvtsi2sd        xmm3, rdx
 
 perform_division:
-        divsd           xmm0, xmm2      ; w = r /  2
-        divsd           xmm0, xmm3      ; w = r / (2 * min(width, height))
+        divsd           xmm0, xmm2              ; w = r /  2
+        divsd           xmm0, xmm3              ; w = r / (2 * min(width, height))
 
         ucomisd         xmm0, xmm1
-        jb              calculate_padding        ; jummp if xmm0 < xmm1
+        jb              calculate_offset        ; jummp if xmm0 < xmm1
 
         movsd           xmm0, xmm1              ; 1 is lower 
 
-calculate_padding:
-        ; Lets add padding
-        ; r15 - width * bpp
-        mov     r15, rdx          ; width
-        imul    r15, r12          ; width * bpp
-
-        mov     r14, r15          ; copy        
-        and     r14, 7          ; last 3 bits 
-
-break1:
-        cmp     r14, 0
-        je      calculate_offset  ; padding is zero
-
-break2:
-        ; Padding neccessary
-        mov     r13, 4
-        sub     r13, r14                ; padding = 4 - r14
-        add     r15, r13                ; wdith * bpp + padding
-
 calculate_offset:
-        ; xmm0 - w
+        ; xmm0 - w 
         ; xmm1 - result color (float)
         ; xmm2 - current color (float)
         ; xmm3 - current m1 (float)
