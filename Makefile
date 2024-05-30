@@ -1,13 +1,13 @@
 EXEFILE = main
 OBJECTS = main.o convolution.o
-CCFMT = -m64
+CCFMT =
 NASMFMT = -f elf64
-CCOPT = 
+CCOPT = -fPIE -no-pie
 NASMOPT = -w+all
 
 CC = g++
-CFLAGS = -c -g -Wall -Wextra
-LDFLAGS = -lGL -lSDL2 -lSDL2_image
+CFLAGS = -c -g -Wall -Wextra -fPIE -no-pie
+LDFLAGS = -lGL -lSDL2 -lSDL2_image -fPIE -no-pie
 
 %.o: %.cpp
 	$(CC) $(CCFMT) $(CFLAGS) -o $@ $<

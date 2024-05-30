@@ -1,8 +1,19 @@
-       section .text
+        section .data
+        matrix1_corner  dq      0.0
+        matrix1_edge    dq      -1.0
+        matrix1_mid     dq      5.0
+        matrix2_corner  dq      1.0
+        matrix2_edge    dq      2.0
+        matrix2_mid     dq      -4.0
+
+        ; Constants
+        float_2         dq      2.0
+        float_1         dq      1.0
+        
+        section .text
         global  convolution
         
 convolution:
-        ; ORIGNAL
         ; rdi - image pixel map address
         ; rsi - result pixel map address
         ; rdx - width
@@ -11,19 +22,19 @@ convolution:
         ; r9  - mouse y
         ; r10 - current x
         ; r11 - current y
-
-        ; r12 - radius
-        ; r13 - new pixel color
-        ; r14 - offset for color byte
-        ; r15 - single pixel color factor
-        ; rbx - calculations
-
+        ; r12 - bpp (bites per pixel)
         push    rbp
         mov     rbp, rsp
         push    r12
         push    r13
         push    r14
         push    r15
+
+        mov     rdx, 512
+        mov     rcx, 512
+        ;mov     r8, 2
+        ;mov     r9, 1
+
 
         ; Initial values
         mov      r10, 1
@@ -32,212 +43,157 @@ convolution:
 convolute_pixel:
         ; Calculate distance
         mov     r12, r10
-        sub     r12, r8    ; delta x
+        sub     r12, r8         ; delta x
+        imul    r12, r12        ; (delta x)^2
 
         mov     r13, r11
-        sub     r13, r9    ; delta y
-
-        imul    r12, r12        ; (delta x)^2
+        sub     r13, r9         ; delta y
         imul    r13, r13        ; (delta y)^2
 
         add     r12, r13        ; (delta x)^2 + (delta y)^2
-        shl     r12, 32         ; fixed point 32b32b
 
-estimate_sqr_root:
-        mov     r13, 0                  ; r13 - low
-        mov     r14, r12                ; r14 - high
-        mov     rbx, 1                  ; 1
-        shl     rbx, 32                 ; 1 in 32b32b
+sqrt_root:        
+        cvtsi2sd        xmm0, r12
+        sqrtsd          xmm0, xmm0      ; is distance
 
-sqrt_root_loop:
-        mov     r15, r13        ; r15 = low
-        add     r15, r14        ; r15 = low + high
-        shr     r15, 1          ; r15 = (low + high) / 2 [mid]
+calculate_w:
+        movsd   xmm1, [float_1]
+        movsd   xmm2, [float_2]
 
-        mov     rax, r15
-        imul    r15             ; rax - estimated square
-        shr     rax, 32         ; fix fixed point offset
+        cmp             rdx, rcx        ; compare width and height
+        jl              width_lower
 
-        cmp     rax, r12        ; check if matches
-        jg      upper_half
-        je      found_sqrt_root
-
-lower_half:
-        mov     r13, r15                ; low = mid
-
-        add     r13, rbx                ; low = mid + 1 (2^32)
-        jmp     continue
-
-upper_half:
-        mov     r14, r15                ; high = mid
-        sub     r14, rbx                ; high = mid - 1 (2^32)
-
-continue:
-        cmp     r13, r14
-        jle     sqrt_root_loop
-
-found_sqrt_root:
-        mov      r12, r15
-        shl     r12, 32         ; this is distance
-
-take_first_minimum:
-        ; w = min(r / (2 * min(width, height)), 1)
-        ; r13 = min(width, height)
-        ; r12 = distance
-        cmp     rdx, rcx        ; compare width and height
-        jl      width_lower
-
-height_lower:
-        mov     r13, rcx
-        jmp     perform_division
+        ; Height_lower
+        cvtsi2sd        xmm3, rcx
+        jmp             perform_division
 
 width_lower:
-        mov     r13, rdx
+        cvtsi2sd        xmm3, rdx
 
 perform_division:
-        shl     r13, 32         ; convert to fixed pointed 32b32b
-        xor     rdx, rdx        ; load with 0's for division
+        divsd           xmm0, xmm2      ; w = r /  2
+        divsd           xmm0, xmm3      ; w = r / (2 * min(width, height))
 
+        ucomisd         xmm0, xmm1
+        jb              calculate_offset        ; jummp if xmm0 < xmm1
 
-        mov     rax, r12        ; rax = r
-        div     r13             ; rax = r /  min(wdith, height)
-        shr     rax, 1          ; rax = r / (min(wdith, height) * 2)
-        shr     rax, 32         ; fix fixed point offset
-
-        mov     r12, rax
-
-take_second_minimum:
-        cmp     r12, rbx                ; 1 in 32b32b (2^32)
-        jl      calculate_offset        ; 1 is higher
-
-        mov     r12, rbx                ; 1 is lower 
+        movsd           xmm0, xmm1              ; 1 is lower 
 
 calculate_offset:
-        ; r12 - contains W
-        ; r13 - will store final new pixel color
-        ; r14 - will store color byte offset
-        ; r15 - will store current mask
-        ; rbx - will store current color*mask
+        ; xmm0 - w
+        ; xmm1 - result color (float)
+        ; xmm2 - current color (float)
+        ; xmm3 - current m1 (float)
+        ; xmm4 - current m2 / result mask (float)
+        ; r13 - addres offset
+        ; r14 - sum of colors
+        ; r13 - ++y offset
 
-        mov     r14, r11        ;  y
-        imul    r14, rdx        ;  y * width
-        add     r14, r10        ;  y * width + x 
-        imul    r14, 3          ; (y * width + x) * 3 = offset from bitmap start        ; BRUH
+        ; Calculate ++y offset
+        mov     r15, rdx        ; width
+        imul    r15, 3          ; width * 3
+
+        ; Calculate pixel offset
+        mov     r13, r11        ;  y
+        imul    r13, rdx        ;  y * width
+        add     r13, r10        ;  y * width + x 
+        imul    r13, 3          ; (y * width + x) * 3
+        add     r13, rdi        ; (y * width + x) * 3 + pixel map adress
+
+middle_factor:
+        ; Get original color
+        xor     r14, r14
+        mov     r14b, byte [r13]
+
+        ; Calculate mask
+        movsd   xmm3, [matrix1_mid]     ; prep m1
+        movsd   xmm4, [matrix2_mid]     ; mask = m2
+        mulsd   xmm4, xmm0              ; mask = m2 * w
+        addsd   xmm3, xmm4              ; mask = m2 * w + m1
         
-        add     r14, rdi        ;  original pixel byte adress
+        ; Multiply mask and color
+        cvtsi2sd        xmm1, r14       ; convert to float
+        mulsd           xmm1, xmm3      ; color *= mask
 
-calculate_middle_mask:
-        imul    r13, r12, -1            ; mask = W * (-1)
-        shl     r13, 2                  ; mask = W * (-4)
-        shr     r13, 32                 ; fix fixed point offset
+edges_factor:
+        xor     r14, r14
 
-        mov     rax, 5
-        shl     rax, 32
-        add     r13, rax                ; += 5 (in 32b32b)
-        
-calculate_middle_color:
-        imul    r13, [r14]      ; color = mask * og M color
-        jmp     end
-        shr     r13, 32         ; fix fixed point offset
+        ; Sum edge colors
+        sub     r13, 3                  ; go to L
+        mov     r14b, byte [r13]        ; L color
 
-sum_edge_colors:
-        ; sum L, R, T and B  colors
-        ; because all have the same mask
+        add     r13, 6                  ; go to R
+        movzx   rax, byte [r13]         ; load
+        add     r14, rax                ; L + R color
 
-        ; temporarly use r10 and r11 due to lack of registers
-        ; r10 - offset difference when moving diagonaly
-        ; r11 - sum of colors
+        sub     r13, 3                  ; go to M
+        sub     r13, r15                ; go to T
+        movzx   rax, byte [r13]         ; load
+        add     r14, rax                ; L + R + T color
 
-        push    rbp
-        mov     rbp, rsp
-        push    r10
-        push    r11
+        add     r13, r15                ; go to M
+        add     r13, r15                ; go to B
+        movzx   rax, byte [r13]         ; load
+        add     r14, rax                ; L + R + T + B color
 
-        mov     r10, rdx        ; width
-        imul    r10, 3          ; width * 3     ; BRUH
+        ; Calculate mask
+        movsd   xmm3, [matrix1_edge]    ; prep m1
+        movsd   xmm4, [matrix2_edge]    ; mask = m2
+        mulsd   xmm4, xmm0              ; mask = m2 * w
+        addsd   xmm3, xmm4              ; mask = m2 * w + m1
 
+        ; Multiply mask and sum of colors
+        cvtsi2sd        xmm2, r14
+        mulsd           xmm2, xmm3
+        addsd           xmm1, xmm2      
 
-        sub     r14, 3          ; L offset      ; BRUH
-        mov     r11, [r14]      ; L color
+corners_factor:
+        xor     r14, r14
 
-        add     r14, 6          ; R offset      ; BRUH
-        add     r11, [r14]      ; L + R color
-        
-        sub     r14, 6          ; back to M     ; BRUH
-        sub     r14, r10        ; T offset
-        add     r11, [r14]      ; L + R + T color
+        ; Sum edge colors
+        sub     r13, 3                  ; go to BL
+        mov     r14b, byte [r13]        ; BL color
 
-        add     r14, r10        ; back to M
-        add     r14, r10        ; B offset
-        add     r11, [r14]      ; L + R + T + B color
+        add     r13, 6                  ; go to BR
+        movzx   rax, byte [r13]         ; load
+        add     r14, rax                ; BL + BR color
 
-        shl     r11, 32         ; convert to 32b32b
+        sub     r13, r10                ; go to R
+        sub     r13, r10                ; go to TR
+        movzx   rax, byte [r13]         ; load
+        add     r14, rax                ; BL + BR + TR color
 
-calculate_edge_mask:
-        mov     r15, r12                ; mask = w
-        shl     r15, 1                  ; mask = w * 2
+        sub     r13, 6                  ; go to TL
+        movzx   rax, byte [r13]         ; load
+        add     r14, rax                ; BL + BR + TR + TL color
 
-        ;mov     rax, [fixed_point_1]
-        sub     r15, rbx                ; mask = w * 2 - 1 (in 32b32b)          ; !!!!!
+        ; Calculate mask
+        movsd   xmm3, [matrix1_corner]  ; prep m1
+        movsd   xmm4, [matrix2_corner]  ; mask = m2
+        mulsd   xmm4, xmm0              ; mask = m2 * w
+        addsd   xmm3, xmm4              ; mask = m2 * w + m1
 
-        imul    r11, r15        ; color factor = color * mask
-        shr     r11, 32         ; fix fixed point offset
+        ; Multiply mask and sum of colors
+        cvtsi2sd        xmm2, r14
+        mulsd           xmm2, xmm3
+        addsd           xmm1, xmm2
 
-        add     r13, r11        ; add factor to final color
-
-sum_corner_colors:
-        ; add BL, BR, TR and TL colors
-        ; because all have the same mask
-
-        ; offset atm points to B pixel
-
-        sub     r14, 3          ; BL offset     ; BRUH
-        mov     r11, [r14]      ; BL color
-
-        add     r14, 6          ; BR offset     ; BRUH
-        add     r11, [r14]      ; BL + BR color
-
-        sub     r14, r10        ; R edge
-        sub     r14, r10        ; TR offset
-        add     r11, [r14]      ; BL + BR + TR color
-
-        sub     r14, 3          ; TL offset     ; BRUH
-        add     r11, [r14]      ; BL + BR + TR + TL color
-
-        shl     r11, 32         ; convert to 32b32b
-
-calculate_corner_mask:
-        ; we can multiply by W since for corner mask = w * 1 + 0
-
-        imul    r11, r12        ; color *= w
-        shr     r11, 32         ; fix fixed point offset
-
-        add     r13, r11        ; add factor to final color
-
-        pop     r11
-        pop     r10
-        mov     rsp, rbp
-        pop     rbp
+        ; Convert float to integer
+        cvtsd2si        r14, xmm1 
 
 save_color:
-        ; r14 currently is offset to TL pixel
+        ; Fix offset back
+        add     r13, 3          ; go to T
+        add     r13, r15        ; go to M
+        sub     r13, rdi        ; back to pure offset
+        add     r13, rsi        ; new pixel map save adress
 
-        shr     r13, 32         ; turn back from fixed point to int
-
-        add     r14, 3          ; back to T pixel       ; BRUH
-        add     r14, r10        ; back to M pixel
-
-        sub     r14, rdi        ; back to pure offset
-        add     r14, rsi        ; new pixel map save adress 
-
-        mov     [r14], r13      ; save color byte 1
-        inc     r14
-
-        mov     [r14], r13      ; save color byte 2
-        inc     r14
-
-        mov     [r14], r13      ; save color byte 3
-        inc     r14
+        mov     [r13], r14b      ; save color byte 1
+        inc     r13
+        mov     [r13], r14b     ; save color byte 2
+        inc     r13
+        mov     [r13], r14b     ; save color byte 3
+        inc     r13
 
 next_pixel:
         cmp    r10, rdx
