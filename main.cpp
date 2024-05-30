@@ -36,8 +36,8 @@ int main(int argc, char *argv[]) {
     //     printf("%d: %s\n", i, convolution(argv[i]));
     
     const char* path = "IFiles/julia1.bmp";
-    int width = 512;
-    int height = 512;
+    int width = 512 * 2;
+    int height = 512 * 2;
 
     if (argc == 2) {
         path = argv[2];
@@ -116,6 +116,8 @@ int main(int argc, char *argv[]) {
     int mouse_x = 0;
     int mouse_y = 0;
 
+    int i = 0;
+
     bool quit = false;
     SDL_Event event;
     while (!quit) {
@@ -137,8 +139,15 @@ int main(int argc, char *argv[]) {
             }
             else if (event.type == SDL_MOUSEBUTTONDOWN) {
                 SDL_GetMouseState(&mouse_x, &mouse_y);
+                mouse_x /= 2;
+                mouse_y /= 2;
                 convolution(image_pixel_map, result_pixel_map, width, height, mouse_x, mouse_y, 3);
-                redrawWindow(texture, renderer, pitch, result_pixel_map);
+                i++;
+                if (i%2 ==0) {
+                    redrawWindow(texture, renderer, pitch, image_pixel_map);
+                } else {
+                    redrawWindow(texture, renderer, pitch, result_pixel_map);
+                }
             }
         }
     }

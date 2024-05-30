@@ -17,7 +17,7 @@ convolution:
         ; rdi - image pixel map address
         ; rsi - result pixel map address
         ; rdx - width
-        ; rcx - heightd
+        ; rcx - height
         ; r8  - mouse x
         ; r9  - mouse y
         ; r10 - current x
@@ -25,16 +25,16 @@ convolution:
         ; r12 - bpp (bites per pixel)
         push    rbp
         mov     rbp, rsp
+        push    r12
         push    r13
         push    r14
         push    r15
 
         mov     rdx, 512
         mov     rcx, 512
+        mov     r12, 3
         ;mov     r8, 2
         ;mov     r9, 1
-
-        mov     r12, 3
 
 
         ; Initial values
@@ -49,7 +49,8 @@ convolute_pixel:
 
         mov     r14, r11
         sub     r14, r9         ; delta y
-        imul    r14, r14        ; (delta y)^24
+        imul    r14, r14        ; (delta y)^2
+
         add     r13, r14        ; (delta x)^2 + (delta y)^2
 
 sqrt_root:        
@@ -91,14 +92,14 @@ calculate_offset:
 
         ; Calculate ++y offset
         mov     r15, rdx        ; width
-        imul    r15, r12        ; width * bpp
+        imul    r15, r12          ; width * 3
 
         ; Calculate pixel offset
         mov     r13, r11        ;  y
         imul    r13, rdx        ;  y * width
         add     r13, r10        ;  y * width + x 
-        imul    r13, r12          ; (y * width + x) * bpp
-        add     r13, rdi        ; (y * width + x) * bpp + pixel map adress
+        imul    r13, r12          ; (y * width + x) * 3
+        add     r13, rdi        ; (y * width + x) * 3 + pixel map adress
 
 middle_factor:
         ; Get original color
@@ -155,6 +156,7 @@ corners_factor:
         sub     r13, r12                ; go to BL
         mov     r14b, byte [r13]        ; BL color
 
+        add     r13, r12                ; go to BM
         add     r13, r12                ; go to BR
         movzx   rax, byte [r13]         ; load
         add     r14, rax                ; BL + BR color
@@ -164,8 +166,8 @@ corners_factor:
         movzx   rax, byte [r13]         ; load
         add     r14, rax                ; BL + BR + TR color
 
-        sub     r13, r12                 ; go to TM
-        sub     r13, r12                 ; go to TL
+        sub     r13, r12                ; go to TM
+        sub     r13, r12                ; go to TL
         movzx   rax, byte [r13]         ; load
         add     r14, rax                ; BL + BR + TR + TL color
 
@@ -198,17 +200,17 @@ save_color:
         inc     r13
 
 next_pixel:
-        cmp    cl, dl
+        cmp    r10, rdx
         je     next_row         ; leaves row without modyfing last pixel
 
-        add     cl, 1
+        add     r10, 1
         jmp     convolute_pixel
 
 next_row:
         mov     r10, 1
         add     r11, 1
 
-        cmp     ch, dh
+        cmp     r11, rcx
         jl      convolute_pixel ; ends when equals last pixel
 
 
@@ -217,7 +219,7 @@ end:
         pop     r15
         pop     r14
         pop     r13
-        ;pop     r12
+        pop     r12
         mov     rsp, rbp
         pop     rbp
         ret
