@@ -17,7 +17,7 @@ convolution:
         ; rdi - image pixel map address
         ; rsi - result pixel map address
         ; rdx - width
-        ; rcx - height
+        ; rcx - heightd
         ; r8  - mouse x
         ; r9  - mouse y
         ; r10 - current x
@@ -25,7 +25,6 @@ convolution:
         ; r12 - bpp (bites per pixel)
         push    rbp
         mov     rbp, rsp
-        push    r12
         push    r13
         push    r14
         push    r15
@@ -35,6 +34,8 @@ convolution:
         ;mov     r8, 2
         ;mov     r9, 1
 
+        mov     r12, 3
+
 
         ; Initial values
         mov      r10, 1
@@ -42,18 +43,17 @@ convolution:
 
 convolute_pixel:
         ; Calculate distance
-        mov     r12, r10
-        sub     r12, r8         ; delta x
-        imul    r12, r12        ; (delta x)^2
+        mov     r13, r10
+        sub     r13, r8         ; delta x
+        imul    r13, r13        ; (delta x)^2
 
-        mov     r13, r11
-        sub     r13, r9         ; delta y
-        imul    r13, r13        ; (delta y)^2
-
-        add     r12, r13        ; (delta x)^2 + (delta y)^2
+        mov     r14, r11
+        sub     r14, r9         ; delta y
+        imul    r14, r14        ; (delta y)^24
+        add     r13, r14        ; (delta x)^2 + (delta y)^2
 
 sqrt_root:        
-        cvtsi2sd        xmm0, r12
+        cvtsi2sd        xmm0, r13
         sqrtsd          xmm0, xmm0      ; is distance
 
 calculate_w:
@@ -91,14 +91,14 @@ calculate_offset:
 
         ; Calculate ++y offset
         mov     r15, rdx        ; width
-        imul    r15, 3          ; width * 3
+        imul    r15, r12        ; width * bpp
 
         ; Calculate pixel offset
         mov     r13, r11        ;  y
         imul    r13, rdx        ;  y * width
         add     r13, r10        ;  y * width + x 
-        imul    r13, 3          ; (y * width + x) * 3
-        add     r13, rdi        ; (y * width + x) * 3 + pixel map adress
+        imul    r13, r12          ; (y * width + x) * bpp
+        add     r13, rdi        ; (y * width + x) * bpp + pixel map adress
 
 middle_factor:
         ; Get original color
@@ -119,14 +119,15 @@ edges_factor:
         xor     r14, r14
 
         ; Sum edge colors
-        sub     r13, 3                  ; go to L
+        sub     r13, r12                ; go to L
         mov     r14b, byte [r13]        ; L color
 
-        add     r13, 6                  ; go to R
+        add     r13, r12                ; go to M
+        add     r13, r12                ; go to R
         movzx   rax, byte [r13]         ; load
         add     r14, rax                ; L + R color
 
-        sub     r13, 3                  ; go to M
+        sub     r13, r12                ; go to M
         sub     r13, r15                ; go to T
         movzx   rax, byte [r13]         ; load
         add     r14, rax                ; L + R + T color
@@ -151,19 +152,20 @@ corners_factor:
         xor     r14, r14
 
         ; Sum edge colors
-        sub     r13, 3                  ; go to BL
+        sub     r13, r12                ; go to BL
         mov     r14b, byte [r13]        ; BL color
 
-        add     r13, 6                  ; go to BR
+        add     r13, r12                ; go to BR
         movzx   rax, byte [r13]         ; load
         add     r14, rax                ; BL + BR color
 
-        sub     r13, r10                ; go to R
-        sub     r13, r10                ; go to TR
+        sub     r13, r15                ; go to R
+        sub     r13, r15                ; go to TR
         movzx   rax, byte [r13]         ; load
         add     r14, rax                ; BL + BR + TR color
 
-        sub     r13, 6                  ; go to TL
+        sub     r13, r12                 ; go to TM
+        sub     r13, r12                 ; go to TL
         movzx   rax, byte [r13]         ; load
         add     r14, rax                ; BL + BR + TR + TL color
 
@@ -183,7 +185,7 @@ corners_factor:
 
 save_color:
         ; Fix offset back
-        add     r13, 3          ; go to T
+        add     r13, r12        ; go to T
         add     r13, r15        ; go to M
         sub     r13, rdi        ; back to pure offset
         add     r13, rsi        ; new pixel map save adress
@@ -215,7 +217,7 @@ end:
         pop     r15
         pop     r14
         pop     r13
-        pop     r12
+        ;pop     r12
         mov     rsp, rbp
         pop     rbp
         ret
