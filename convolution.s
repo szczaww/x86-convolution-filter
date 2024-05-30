@@ -32,8 +32,6 @@ convolution:
 
         ; 7th argument from stack
         mov     r12, [rbp+16]
-        mov     rdx, 512
-        mov     rcx, 512
 
         ; Initial x&y values
         mov      r10, 1
