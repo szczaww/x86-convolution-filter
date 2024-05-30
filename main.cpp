@@ -4,7 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-
+#include <unistd.h>
 
 extern "C" void convolution(Uint32* image_pixel_map, Uint32* result_pixel_map, int width, int height, int mouse_x, int mouse_y, int bytes_per_pixel);
 
@@ -19,6 +19,8 @@ int main(int argc, char *argv[]) {
     // Prepare variables
     int mouse_x = 0;
     int mouse_y = 0;
+    int new_x;
+    int new_y;
     const char* path = "IFiles/view.bmp";
 
     if (argc >= 1) {
@@ -58,6 +60,7 @@ int main(int argc, char *argv[]) {
 
     redrawWindow(texture, renderer, pitch, image_pixel_map);
 
+    bool mouse_down = false;
     bool convolution_displayed = false;
     bool quit = false;
     SDL_Event event;
@@ -75,12 +78,7 @@ int main(int argc, char *argv[]) {
                     {
                         case SDL_BUTTON_LEFT:
                             convolution_displayed = true;
-                            SDL_GetMouseState(&mouse_x, &mouse_y);
-                            printf("%s: %d\n", "Mouse x:", mouse_x);
-                            printf("%s: %d\n", "Mouse y:", mouse_y);
-                            printf("\n");
-                            convolution(image_pixel_map, result_pixel_map, width, height, mouse_x, mouse_y, bpp);
-                            redrawWindow(texture, renderer, pitch, result_pixel_map);
+                            mouse_down = true;
                             break;
 
                         case SDL_BUTTON_RIGHT:
@@ -93,6 +91,31 @@ int main(int argc, char *argv[]) {
                             }
                             break;
                     }
+                    break;
+
+                case SDL_MOUSEBUTTONUP:
+                    switch (event.button.button) {
+                        case SDL_BUTTON_LEFT:
+                            mouse_down = false;
+                            break;
+                    }
+                    break;
+
+                default:
+                    if (mouse_down == false) {
+                        break;
+                    }
+
+                    SDL_GetMouseState(&new_x, &new_y);
+                    if (new_x == mouse_x && new_y == mouse_y) {
+                        break;
+                    }
+                    
+                    mouse_x = new_x;
+                    mouse_y = new_y;
+
+                    convolution(image_pixel_map, result_pixel_map, width, height, mouse_x, mouse_y, bpp);
+                    redrawWindow(texture, renderer, pitch, result_pixel_map);
                     break;
             }
         }
