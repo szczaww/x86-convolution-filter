@@ -30,14 +30,12 @@ convolution:
         push    r14
         push    r15
 
+        ; 7th argument from stack
+        mov     r12, [rbp+16]
         mov     rdx, 512
         mov     rcx, 512
-        mov     r12, 3
-        ;mov     r8, 2
-        ;mov     r9, 1
 
-
-        ; Initial values
+        ; Initial x&y values
         mov      r10, 1
         mov      r11, 1
 
@@ -76,9 +74,26 @@ perform_division:
         divsd           xmm0, xmm3      ; w = r / (2 * min(width, height))
 
         ucomisd         xmm0, xmm1
-        jb              calculate_offset        ; jummp if xmm0 < xmm1
+        jb              calculate_padding        ; jummp if xmm0 < xmm1
 
         movsd           xmm0, xmm1              ; 1 is lower 
+
+calculate_padding:
+        ; Lets add padding
+        ; r15 - width * bpp
+        mov     r15, rdx          ; width
+        imul    r15, r12          ; width * bpp
+
+        mov     r14, r15          ; copy        
+        and     r14, 7          ; last 3 bits 
+
+        cmp     r14, 0
+        je      calculate_offset  ; padding is zero
+
+        ; Padding neccessary
+        mov     r13, 4
+        sub     r13, r14                ; padding = 4 - r14
+        add     r15, r13                ; wdith * bpp + padding
 
 calculate_offset:
         ; xmm0 - w
@@ -88,18 +103,16 @@ calculate_offset:
         ; xmm4 - current m2 / result mask (float)
         ; r13 - addres offset
         ; r14 - sum of colors
-        ; r13 - ++y offset
-
-        ; Calculate ++y offset
-        mov     r15, rdx        ; width
-        imul    r15, r12          ; width * 3
-
-        ; Calculate pixel offset
+        ; r15 - row offset (++y or --y)
+        
         mov     r13, r11        ;  y
-        imul    r13, rdx        ;  y * width
-        add     r13, r10        ;  y * width + x 
-        imul    r13, r12          ; (y * width + x) * 3
-        add     r13, rdi        ; (y * width + x) * 3 + pixel map adress
+        imul    r13, r15        ;  y * (width * bpp + padding) 
+        
+        mov     r14, r10        ; x
+        imul    r14, r12        ; x * bpp
+
+        add     r13, r14        ; y * (width * bpp + padding) + x * bpp
+        add     r13, rdi        ; y * (width * bpp + padding) + x * bpp + pixel map offset
 
 middle_factor:
         ; Get original color
@@ -200,8 +213,8 @@ save_color:
         inc     r13
 
 next_pixel:
-        cmp    r10, rdx
-        je     next_row         ; leaves row without modyfing last pixel
+        cmp     r10, rdx
+        je      next_row         ; leaves row without modyfing last pixel
 
         add     r10, 1
         jmp     convolute_pixel
@@ -212,7 +225,6 @@ next_row:
 
         cmp     r11, rcx
         jl      convolute_pixel ; ends when equals last pixel
-
 
 end:
         mov     rax, rsi        ; return result_pixel_map
