@@ -6,7 +6,7 @@
 #include <string>
 
 
-extern "C" void convolution(Uint32* image_pixel_map, Uint32* result_pixel_map, int width, int height, int mouse_x, int mouse_y);
+extern "C" void convolution(Uint32* image_pixel_map, Uint32* result_pixel_map, int width, int height, int mouse_x, int mouse_y, int bytes_per_pixel);
 
 bool saveSurfacePixelsToFile(SDL_Surface* surface, const char* filename) {
     if (!surface) {
@@ -36,8 +36,8 @@ int main(int argc, char *argv[]) {
     //     printf("%d: %s\n", i, convolution(argv[i]));
     
     const char* path = "IFiles/julia1.bmp";
-    int width = 1200;
-    int height = 1200;
+    int width = 512 * 2;
+    int height = 512 * 2;
 
     if (argc == 2) {
         path = argv[2];
@@ -139,7 +139,9 @@ int main(int argc, char *argv[]) {
             }
             else if (event.type == SDL_MOUSEBUTTONDOWN) {
                 SDL_GetMouseState(&mouse_x, &mouse_y);
-                convolution(image_pixel_map, result_pixel_map, width, height, mouse_x, mouse_y);
+                mouse_x /= 2;
+                mouse_y /= 2;
+                convolution(image_pixel_map, result_pixel_map, width, height, mouse_x, mouse_y, 3);
                 i++;
                 if (i%2 ==0) {
                     redrawWindow(texture, renderer, pitch, image_pixel_map);
