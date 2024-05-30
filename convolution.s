@@ -34,8 +34,11 @@ convolution:
         mov     r12, [rbp+16]
 
         ; Initial x&y values
-        mov      r10, 1
-        mov      r11, 1
+        mov     r10, 1
+        mov     r11, 1
+
+        ; Initial bytes of pixel
+        mov     rbx, 0
 
 calculate_padding:
         ; Lets add padding
@@ -111,6 +114,7 @@ calculate_offset:
 
         add     r13, r14        ; y * (width * bpp + padding) + x * bpp
         add     r13, rdi        ; y * (width * bpp + padding) + x * bpp + pixel map offset
+        add     r13, rbx        ; y * (width * bpp + padding) + x * bpp + pixel map offset + pixel byte offset
 
 middle_factor:
         ; Get original color
@@ -196,20 +200,20 @@ corners_factor:
         ; Convert float to integer
         cvtsd2si        r14, xmm1 
 
-        ;cmp             r14, 255
-        ;jg              greater_than_255
+        cmp             r14, 255
+        jg              greater_than_255
 
-        ;cmp             r14, 0
-        ;jl              less_than_0
+        cmp             r14, 0
+        jl              less_than_0
 
-        ;jmp             save_color
+        jmp             save_color
 
-;less_than_0:
-        ;mov             r14, 0
-        ;jmp             save_color
+less_than_0:
+        mov             r14, 0
+        jmp             save_color
 
-;greater_than_255:
-        ;mov             r14, 255
+greater_than_255:
+        mov             r14, 255
 
 save_color:
         ; Fix offset back
@@ -220,12 +224,20 @@ save_color:
 
         mov     [r13], r14b     ; save color byte 1
         inc     r13
-        mov     [r13], r14b     ; save color byte 2
-        inc     r13
-        mov     [r13], r14b     ; save color byte 3
-        inc     r13
+        ;mov     [r13], r14b     ; save color byte 2
+        ;inc     r13
+        ;mov     [r13], r14b     ; save color byte 3
+        ;inc     r13
+
+        inc     rbx
+        cmp     rbx, 3
+
+        jge     next_pixel              ; finished pixel
+        jmp     calculate_offset        ; next byte
 
 next_pixel:
+        mov     rbx, 0          ; set byte nmb to 0
+
         inc     r10             ; x++
 
         mov     r13, rdx        ; width
