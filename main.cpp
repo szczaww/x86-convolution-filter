@@ -27,7 +27,7 @@ int main() {
     // Load image and extract info
     SDL_Surface* og_surface = IMG_Load(path);
     SDL_Surface* surface = SDL_ConvertSurfaceFormat(og_surface, SDL_PIXELFORMAT_ARGB8888, 0);
-    int width = surface->w; 
+    int width = surface->w;
     int height = surface->h;
     int pitch = surface->pitch;
     int bpp = surface->format->BytesPerPixel;
@@ -54,23 +54,42 @@ int main() {
 
     redrawWindow(texture, renderer, pitch, image_pixel_map);
 
-
+    bool convolution_displayed = false;
     bool quit = false;
     SDL_Event event;
     while (!quit) {
         while (SDL_PollEvent(&event)) 
         {
-            if (event.type == SDL_QUIT) {
+            switch (event.type)
+            {
+                case SDL_QUIT:
                     quit = true;
-            }
-            else if (event.type == SDL_MOUSEBUTTONDOWN) {
-                SDL_GetMouseState(&mouse_x, &mouse_y);
-                printf("%s: %d\n", "Mouse x:", mouse_x);
-                printf("%s: %d\n", "Mouse y:", mouse_y);
-                printf("\n");
+                    break;
+            
+                case SDL_MOUSEBUTTONDOWN:        
+                    switch (event.button.button)
+                    {
+                        case SDL_BUTTON_LEFT:
+                            convolution_displayed = true;
+                            SDL_GetMouseState(&mouse_x, &mouse_y);
+                            printf("%s: %d\n", "Mouse x:", mouse_x);
+                            printf("%s: %d\n", "Mouse y:", mouse_y);
+                            printf("\n");
+                            convolution(image_pixel_map, result_pixel_map, width, height, mouse_x, mouse_y, bpp);
+                            redrawWindow(texture, renderer, pitch, result_pixel_map);
+                            break;
 
-                convolution(image_pixel_map, result_pixel_map, width, height, mouse_x, mouse_y, bpp);
-                redrawWindow(texture, renderer, pitch, result_pixel_map);
+                        case SDL_BUTTON_RIGHT:
+                            if (convolution_displayed == true) {
+                                redrawWindow(texture, renderer, pitch, image_pixel_map);
+                                convolution_displayed = false;
+                            } else {
+                                redrawWindow(texture, renderer, pitch, result_pixel_map);
+                                convolution_displayed = true;
+                            }
+                            break;
+                    }
+                    break;
             }
         }
     }
