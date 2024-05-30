@@ -196,17 +196,17 @@ save_color:
         inc     r13
 
 next_pixel:
-        cmp    r10, rdx
+        cmp    cl, dl
         je     next_row         ; leaves row without modyfing last pixel
 
-        add     r10, 1
+        add     cl, 1
         jmp     convolute_pixel
 
 next_row:
         mov     r10, 1
         add     r11, 1
 
-        cmp     r11, rcx
+        cmp     ch, dh
         jl      convolute_pixel ; ends when equals last pixel
 
 
