@@ -1,81 +1,199 @@
+        section .data
+        matrix1_corner  dq      0.0
+        matrix1_edge    dq      -1.0
+        matrix1_mid     dq      5.0
+        matrix2_corner  dq      1.0
+        matrix2_edge    dq      2.0
+        matrix2_mid     dq      -4.0
+
+        ; Constants
+        float_2         dq      2.0
+        float_1         dq      1.0
+        
         section .text
         global  convolution
         
 convolution:
+        ; rdi - image pixel map address
+        ; rsi - result pixel map address
+        ; rdx - width
+        ; rcx - height
+        ; r8  - mouse x
+        ; r9  - mouse y
+        ; r10 - current x
+        ; r11 - current y
+        ; r12 - bpp (bites per pixel)
         push    rbp
         mov     rbp, rsp
+        push    r12
+        push    r13
         push    r14
         push    r15
 
-        ; Register with constants
-        ; rdi - image pixel map address
-        ; rsi - result pixel map address
-        ; dl  - width / lenght                  >rdx
-        ; dh  - height                          >rdx
-        ; cl  - curent x                >rcx
-        ; ch  - current y               >rcx
-        ; r8  - mouse x
-        ; r9  - mouse y
+        mov     rdx, 512
+        mov     rcx, 512
+        ;mov     r8, 2
+        ;mov     r9, 1
 
-        ; Registers to use
-        ; r10 - radius
-        ; r11 - 
-        ; r12 - 
-        ; r13 - 
-        ; r14 -  
-        ; r15 -  
-        ; rbx -
-
-        mv      dl, rdi
-        mv      dh, rcx
-        mv      cl, r10
-        mv      ch, r11
 
         ; Initial values
-        mv      cl, 1
-        mv      ch, 1
+        mov      r10, 1
+        mov      r11, 1
 
 convolute_pixel:
         ; Calculate distance
-        sub     rax, cl, r8    ; delta x
-        sub     r10, ch, r9    ; delta y 
-
-        imul    rax, rax       ; (delta x)^2
-        imul    r10, r10       ; (delta y)^2
-
-        add     rax, r10
-
-estimate_sqrt_root:
-        ; r10 - original value
-        ; r11 - current aproximation
-        ; r15 - iterations count
-        mv      r10, rax
-        mv      r11, rax
-        mov     r15, 0
-
-sqrt_root_loop:
         mov     r12, r10
+        sub     r12, r8         ; delta x
+        imul    r12, r12        ; (delta x)^2
+
         mov     r13, r11
+        sub     r13, r9         ; delta y
+        imul    r13, r13        ; (delta y)^2
 
-        xor     r12, rax       ; r12 = og_value - curr_aprox^2
-        div     rax,           ; rax  og_value / curr_arpox
+        add     r12, r13        ; (delta x)^2 + (delta y)^2
 
-        add     rax, 
+sqrt_root:        
+        cvtsi2sd        xmm0, r12
+        sqrtsd          xmm0, xmm0      ; is distance
 
+calculate_w:
+        movsd   xmm1, [float_1]
+        movsd   xmm2, [float_2]
 
+        cmp             rdx, rcx        ; compare width and height
+        jl              width_lower
 
+        ; Height_lower
+        cvtsi2sd        xmm3, rcx
+        jmp             perform_division
 
+width_lower:
+        cvtsi2sd        xmm3, rdx
 
+perform_division:
+        divsd           xmm0, xmm2      ; w = r /  2
+        divsd           xmm0, xmm3      ; w = r / (2 * min(width, height))
 
+        ucomisd         xmm0, xmm1
+        jb              calculate_offset        ; jummp if xmm0 < xmm1
 
+        movsd           xmm0, xmm1              ; 1 is lower 
 
-save_pixel:
-        imul    rax, ch, dl     ; rax =  y * width
-        add     rax, cl         ; rax =  y * width + x
-        imul    rax, 3          ; rax = (y * width + x) * 3
+calculate_offset:
+        ; xmm0 - w
+        ; xmm1 - result color (float)
+        ; xmm2 - current color (float)
+        ; xmm3 - current m1 (float)
+        ; xmm4 - current m2 / result mask (float)
+        ; r13 - addres offset
+        ; r14 - sum of colors
+        ; r13 - ++y offset
 
-        add     rax, rsi        ; rax = (y * width + x) * 3 + result pixel map address
-        mov     [rax], r12      ; save color !!!!!!!!
+        ; Calculate ++y offset
+        mov     r15, rdx        ; width
+        imul    r15, 3          ; width * 3
+
+        ; Calculate pixel offset
+        mov     r13, r11        ;  y
+        imul    r13, rdx        ;  y * width
+        add     r13, r10        ;  y * width + x 
+        imul    r13, 3          ; (y * width + x) * 3
+        add     r13, rdi        ; (y * width + x) * 3 + pixel map adress
+
+middle_factor:
+        ; Get original color
+        xor     r14, r14
+        mov     r14b, byte [r13]
+
+        ; Calculate mask
+        movsd   xmm3, [matrix1_mid]     ; prep m1
+        movsd   xmm4, [matrix2_mid]     ; mask = m2
+        mulsd   xmm4, xmm0              ; mask = m2 * w
+        addsd   xmm3, xmm4              ; mask = m2 * w + m1
+        
+        ; Multiply mask and color
+        cvtsi2sd        xmm1, r14       ; convert to float
+        mulsd           xmm1, xmm3      ; color *= mask
+
+edges_factor:
+        xor     r14, r14
+
+        ; Sum edge colors
+        sub     r13, 3                  ; go to L
+        mov     r14b, byte [r13]        ; L color
+
+        add     r13, 6                  ; go to R
+        movzx   rax, byte [r13]         ; load
+        add     r14, rax                ; L + R color
+
+        sub     r13, 3                  ; go to M
+        sub     r13, r15                ; go to T
+        movzx   rax, byte [r13]         ; load
+        add     r14, rax                ; L + R + T color
+
+        add     r13, r15                ; go to M
+        add     r13, r15                ; go to B
+        movzx   rax, byte [r13]         ; load
+        add     r14, rax                ; L + R + T + B color
+
+        ; Calculate mask
+        movsd   xmm3, [matrix1_edge]    ; prep m1
+        movsd   xmm4, [matrix2_edge]    ; mask = m2
+        mulsd   xmm4, xmm0              ; mask = m2 * w
+        addsd   xmm3, xmm4              ; mask = m2 * w + m1
+
+        ; Multiply mask and sum of colors
+        cvtsi2sd        xmm2, r14
+        mulsd           xmm2, xmm3
+        addsd           xmm1, xmm2      
+
+corners_factor:
+        xor     r14, r14
+
+        ; Sum edge colors
+        sub     r13, 3                  ; go to BL
+        mov     r14b, byte [r13]        ; BL color
+
+        add     r13, 6                  ; go to BR
+        movzx   rax, byte [r13]         ; load
+        add     r14, rax                ; BL + BR color
+
+        sub     r13, r10                ; go to R
+        sub     r13, r10                ; go to TR
+        movzx   rax, byte [r13]         ; load
+        add     r14, rax                ; BL + BR + TR color
+
+        sub     r13, 6                  ; go to TL
+        movzx   rax, byte [r13]         ; load
+        add     r14, rax                ; BL + BR + TR + TL color
+
+        ; Calculate mask
+        movsd   xmm3, [matrix1_corner]  ; prep m1
+        movsd   xmm4, [matrix2_corner]  ; mask = m2
+        mulsd   xmm4, xmm0              ; mask = m2 * w
+        addsd   xmm3, xmm4              ; mask = m2 * w + m1
+
+        ; Multiply mask and sum of colors
+        cvtsi2sd        xmm2, r14
+        mulsd           xmm2, xmm3
+        addsd           xmm1, xmm2
+
+        ; Convert float to integer
+        cvtsd2si        r14, xmm1 
+
+save_color:
+        ; Fix offset back
+        add     r13, 3          ; go to T
+        add     r13, r15        ; go to M
+        sub     r13, rdi        ; back to pure offset
+        add     r13, rsi        ; new pixel map save adress
+
+        mov     [r13], r14b      ; save color byte 1
+        inc     r13
+        mov     [r13], r14b     ; save color byte 2
+        inc     r13
+        mov     [r13], r14b     ; save color byte 3
+        inc     r13
 
 next_pixel:
         cmp    cl, dl
@@ -85,17 +203,19 @@ next_pixel:
         jmp     convolute_pixel
 
 next_row:
-        mv      cl, 1
-        add     ch, 1
+        mov     r10, 1
+        add     r11, 1
 
         cmp     ch, dh
         jl      convolute_pixel ; ends when equals last pixel
 
+
 end:
         mov     rax, rsi        ; return result_pixel_map
-        pop     15
+        pop     r15
         pop     r14
+        pop     r13
+        pop     r12
         mov     rsp, rbp
         pop     rbp
-        ret     
         ret
