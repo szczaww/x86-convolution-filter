@@ -22,3 +22,4 @@ $(EXEFILE): $(OBJECTS)
 
 clean:
 	rm -f $(BUILDDIR)/*.o $(EXEFILE)
+	make

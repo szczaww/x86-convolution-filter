@@ -40,12 +40,12 @@ int main(int argc, char *argv[]) {
     Uint32* result_pixel_map = new Uint32[width * height];
 
 
-    // Print for debugging
-    printf("%s %u\n", "Width:", width);
-    printf("%s %u\n", "Height:", height);
-    printf("%s %u\n", "Pitch:", pitch);
-    printf("%s %u\n", "Bpp:", bpp);
-    printf("\n");
+    // // Print for debugging
+    // printf("%s %u\n", "Width:", width);
+    // printf("%s %u\n", "Height:", height);
+    // printf("%s %u\n", "Pitch:", pitch);
+    // printf("%s %u\n", "Bpp:", bpp);
+    // printf("\n");
 
 
     SDL_Window* window = SDL_CreateWindow("Convolution", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_SHOWN);   // Create a window
