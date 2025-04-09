@@ -1,7 +1,7 @@
 SRCDIR = src
 BUILDDIR = build
-EXEFILE = $(BUILDDIR)/main
-OBJECTS = $(BUILDDIR)/main.o $(BUILDDIR)/convolution.o
+EXEFILE = $(BUILDDIR)/app
+OBJECTS = $(BUILDDIR)/app.o $(BUILDDIR)/convolution.o
 NASMFMT = -f elf64
 CCOPT = -fPIE -no-pie
 NASMOPT = -w+all
