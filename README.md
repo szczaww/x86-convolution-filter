@@ -4,30 +4,18 @@
 [![Stargazers][stars-shield]][stars-url]
 [![Unlicense License][license-shield]][license-url]
 [![LinkedIn][linkedin-shield]][linkedin-url]
-![C](https://img.shields.io/badge/c-%2300599C.svg?style=for-the-badge&logo=c&logoColor=white)
+![C++](https://img.shields.io/badge/c++-%2300599C.svg?style=for-the-badge&logo=c%2B%2B&logoColor=white)
 ![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)
 
 
 <!-- ABOUT THE PROJECT -->
 ## About
-This project is an interactive visualization of a convolution filter, written in x86-64 assembly with a basic C++ frontend.  
-It transofrms bitmap images  producing a mixed effect of saturation & blur of intensity depending on current cursor position. The following mask was used, where r is the pixel distance from your mouse:
+This project is an interactive visualization of a convolution filter, written in x86-64 assembly with a basic C++ frontend. It transforms bitmap images  producing a mixed effect of saturation & blur of intensity depending on current cursor position.  
+The following mask is used, where r would be the pixel distance from your mouse:
 
-\[
-\begin{bmatrix}
-0 & -1 & 0 \\
--1 & 5 & -1 \\
-0 & -1 & 0
-\end{bmatrix}
-+
-\begin{bmatrix}
-1 & 2 & 1 \\
-2 & -4 & 2 \\
-1 & 2 & 1
-\end{bmatrix}
-*
-\ast \min \left( \frac{r}{2 \cdot \min(width, height)} \cdot 1 \right)
-\]
+[  0  -1   0 ]     [ 1  2  1 ]
+[ -1   5  -1 ]  +  [ 2 -4  2 ]  ×  min( r / (2 × min(width, height)),  1 )
+[  0  -1   0 ]     [ 1  2  1 ]
 
 It was developed as part of the assembly intro course at Warsaw University of Technology.
 
