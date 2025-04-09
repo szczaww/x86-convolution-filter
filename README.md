@@ -41,8 +41,8 @@ It was developed as part of the assembly intro course at Warsaw University of Te
 4. Left click to update cursor position & right click to reset image back to normal
 
 <!-- MARKDOWN LINKS & IMAGES -->
-[stars-shield]: https://img.shields.io/github/stars/szczaww/c89-virtual-disk-file.svg?style=for-the-badge
-[stars-url]: https://github.com/szczaww/c89-virtual-disk-file/stargazers
+[stars-shield]: https://img.shields.io/github/stars/szczaww/x86-convolution-filter.svg?style=for-the-badge
+[stars-url]: https://github.com/szczaww/x86-convolution-filter/stargazers
 [license-shield]: https://img.shields.io/github/license/othneildrew/Best-README-Template.svg?style=for-the-badge
 [license-url]: www.linkedin.com/in/kamil-szczawinski
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
