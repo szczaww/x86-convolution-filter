@@ -13,9 +13,11 @@
 This project is an interactive visualization of a convolution filter, written in x86-64 assembly with a basic C++ frontend. It transforms bitmap images  producing a mixed effect of saturation & blur of intensity depending on current cursor position.  
 The following mask is used, where r would be the pixel distance from your mouse:
 
+```
 [  0  -1   0 ]     [ 1  2  1 ]
 [ -1   5  -1 ]  +  [ 2 -4  2 ]  ×  min( r / (2 × min(width, height)),  1 )
 [  0  -1   0 ]     [ 1  2  1 ]
+```
 
 It was developed as part of the assembly intro course at Warsaw University of Technology.
 
