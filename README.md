@@ -7,6 +7,9 @@
 ![C++](https://img.shields.io/badge/c++-%2300599C.svg?style=for-the-badge&logo=c%2B%2B&logoColor=white)
 ![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)
 
+## Showcase
+
+![2025-04-10-01-27-14-ezgif com-resize](https://github.com/user-attachments/assets/7c1c8038-1c35-490e-82c4-1e7759775853)
 
 <!-- ABOUT THE PROJECT -->
 ## About
@@ -44,3 +47,4 @@ It was developed as part of the assembly intro course at Warsaw University of Te
 [license-url]: www.linkedin.com/in/kamil-szczawinski
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: www.linkedin.com/in/kamil-szczawinski
+
